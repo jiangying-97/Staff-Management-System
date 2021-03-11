@@ -12,6 +12,7 @@
 int x=10;
 int y=0;
 int cfd;
+char Status[20]="";
 
 
 //主界面
@@ -76,6 +77,7 @@ void SignInMenu(){
 				//管理员登录
 				//连接服务器，管理员登录系统
 				if(AdminConnect()==0){
+					strcpy(Status,"Admin");
 					AdminMenu();	
 				}
 				else{
@@ -86,6 +88,7 @@ void SignInMenu(){
 			case 2:
 				//用户登录
 				if(UserConnect()==0){
+					strcpy(Status,"User");
 					UserMenu();
 				}
 				else{
@@ -195,7 +198,7 @@ void UpdateUser(){
 	int choice;
 	struct message msg;
 	strcpy(msg.ip,IP);
-	strcpy(msg.Status,"Admin");
+	strcpy(msg.Status,Status);
 	printf("\033[0m");
 	while(1){
 		system("clear");
@@ -218,6 +221,7 @@ void UpdateUser(){
 				printf("\033[32m>>请输入电话号码>>\033[0m");
 				scanf("%s",msg.umsg.phone);
 				strcpy(msg.code,"FindUsrPhone");
+				strcpy(msg.Status,"User");
 				if(FindUsr(&msg)==0){
 					strcpy(msg.code,"UpdatePhone");
 					printf("\033[32m>>修改员工信息...\n\033[0m");
@@ -239,6 +243,7 @@ void UpdateUser(){
 				printf("\033[32m>>请输入身份证号>>\033[0m");
 				scanf("%s",msg.umsg.ID);
 				strcpy(msg.code,"FindUsrID");
+				strcpy(msg.Status,"User");
 				if(FindUsr(&msg)==0){
 					strcpy(msg.code,"UpdateID");
 					printf("\033[32m>>修改员工信息...\n\033[0m");
@@ -260,6 +265,7 @@ void UpdateUser(){
 				printf("\033[32m>>请输入工号>>\033[0m");
 				scanf("%s",msg.umsg.number);
 				strcpy(msg.code,"FindUsrNumber");
+				strcpy(msg.Status,"User");
 				if(FindUsr(&msg)==0){
 					strcpy(msg.code,"UpdateNumber");
 					printf("\033[32m>>修改员工信息...\n\033[0m");
@@ -691,6 +697,9 @@ A:	//填充消息
 	scanf("%s",msg.umsg.number);
 	printf("\033[32m>>请输入身份证号>>\033[0m");	
 	scanf("%s",msg.umsg.ID);
+	strcpy(msg.user,msg.umsg.name);
+	strcpy(msg.passwd,"User");
+
 	//发送消息
 	SendMsg(&msg);
 	//等待接受服务器响应
@@ -956,7 +965,7 @@ A:	bzero(msg.buf,MSGSIZE);
 	strcpy(msg.code,"UserSignIn");
 	printf("\033[32m>>请输入用户名...\n\033[0m");
 	scanf("%s",msg.user);
-	printf("\033[32m>>请输入登录密码...\n\033[0m");
+	printf("\033[32m>>请输入登录密码(\033[31m默认密码：User\033[0m)...\n\033[0m");
 	scanf("%s",msg.passwd);
 	//向服务器发送请求
 	SendMsg(&msg);

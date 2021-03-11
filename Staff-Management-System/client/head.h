@@ -30,6 +30,7 @@
 extern int x;
 extern int y;
 extern int cfd;
+extern char Status[20];
 typedef struct UsrMsg{
 	char name[20];
 	char addr[20];

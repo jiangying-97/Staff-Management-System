@@ -12,7 +12,7 @@ sqlite3* db=NULL;
 char* errmsg=NULL;
 int sfd;
 char sql[256]="";
-char user[20]="";
+
 
 //启动服务器
 int ServerInit(){
@@ -186,7 +186,6 @@ void SqliteClose(){
 }
 //解析消息协议
 void AnalyMsg(Msg* msg,int cfd){
-	struct message cmsg;
 	if(strcmp(msg->code,"AdminSignIn")==0){
 		//管理员登录事件
 		AdminSignIn(msg,cfd);
@@ -242,14 +241,6 @@ void AnalyMsg(Msg* msg,int cfd){
 	if(strcmp(msg->code,"UpdatePhone")==0){
 		//修改用户事件	
 		bzero(sql,sizeof(sql));
-		if(strcmp(msg->umsg.name,"Admin")!=0 && strcmp(msg->umsg.name,user)!=0){
-			printf("\033[31m没有修改数据库的权限:%s...\n\033[0m",errmsg);
-			//向客户端发送报错信息；
-			strcpy(cmsg.code,"Error");
-			strcpy(cmsg.buf,"你没有修改其他用户的权限\n");
-			Send(&cmsg,cfd);
-			return;
-		}
 		sprintf(sql,"UPDATE Staff set Name=\"%s\",Address=\"%s\",Age=%d,\
 				Phone=\"%s\" ,Salary=%f ,Part=\"%s\" ,Level=%d ,Number=\"%s\" ,ID=\"%s\"\
 				where Phone=\"%s\"",msg->umsg.name,msg->umsg.addr,msg->umsg.age,\
@@ -260,34 +251,16 @@ void AnalyMsg(Msg* msg,int cfd){
 	if(strcmp(msg->code,"UpdateID")==0){
 		//修改用户事件	
 		bzero(sql,sizeof(sql));
-		if(strcmp(msg->umsg.name,"Admin")!=0 && strcmp(msg->umsg.name,user)!=0){
-			printf("\033[31m没有修改数据库的权限:%s...\n\033[0m",errmsg);
-			//向客户端发送报错信息；
-			strcpy(cmsg.code,"Error");
-			strcpy(cmsg.buf,"你没有修改其他用户的权限\n");
-			Send(&cmsg,cfd);
-			return;
-		}
-		else{
-			sprintf(sql,"UPDATE Staff set Name=\"%s\" ,Address=\"%s\" ,Age=%d,\
-					Phone=\"%s\" ,Salary=%f ,Part=\"%s\", Level=%d ,Number=\"%s\" ,ID=\"%s\"\
-					where ID=\"%s\"",msg->umsg.name,msg->umsg.addr,msg->umsg.age,\
-					msg->umsg.phone,msg->umsg.salary,msg->umsg.part,msg->umsg.level,msg->umsg.number,\
-					msg->umsg.ID,msg->umsg.ID);
-		}
+		sprintf(sql,"UPDATE Staff set Name=\"%s\" ,Address=\"%s\" ,Age=%d,\
+				Phone=\"%s\" ,Salary=%f ,Part=\"%s\", Level=%d ,Number=\"%s\" ,ID=\"%s\"\
+				where ID=\"%s\"",msg->umsg.name,msg->umsg.addr,msg->umsg.age,\
+				msg->umsg.phone,msg->umsg.salary,msg->umsg.part,msg->umsg.level,msg->umsg.number,\
+				msg->umsg.ID,msg->umsg.ID);
 		UpdateUser(msg,cfd);
 	}
 	if(strcmp(msg->code,"UpdateNumber")==0){
 		//修改用户事件	
 		bzero(sql,sizeof(sql));
-		if(strcmp(msg->umsg.name,"Admin")!=0 && strcmp(msg->umsg.name,user)!=0){
-			printf("\033[31m没有修改数据库的权限:%s...\n\033[0m",errmsg);
-			//向客户端发送报错信息；
-			strcpy(cmsg.code,"Error");
-			strcpy(cmsg.buf,"你没有修改其他用户的权限\n");
-			Send(&cmsg,cfd);
-			return;
-		}
 		sprintf(sql,"UPDATE Staff set Name=\"%s\" ,Address=\"%s\" ,Age=%d,\
 				Phone=\"%s\" ,Salary=%f ,Part=\"%s\" ,Level=%d ,Number=\"%s\" ,ID=\"%s\"\
 				where Number=\"%s\"",msg->umsg.name,msg->umsg.addr,msg->umsg.age,\
@@ -342,8 +315,6 @@ void AdminSignIn(Msg *msg,int cfd){
 				if(strcmp(result[index+1],msg->passwd)==0){
 					if(strcmp(result[index+2],"Admin")==0){
 						//匹配成功，发送消息给客户端
-						bzero(user,sizeof(user));
-						strcpy(user,msg->umsg.name);
 						printf("\033[31m登陆成功...\n\033[0m");
 						strcpy(cmsg.code,"AdminConnect");
 						strcpy(cmsg.buf,"管理员登陆成功\n");
@@ -497,23 +468,11 @@ void AddUser(Msg* msg,int cfd){
 	printf(">>%d\n",__LINE__);
 	//注册该用户
 	bzero(sql,sizeof(sql));
-	sprintf(sql,"insert into User values(\"%s\",\"%s\",\"User\")",msg->user,msg->passwd);
+	sprintf(sql,"insert into User values(\"%s\",\"%s\","User")",msg->user,msg->passwd);
 	res=sqlite3_exec(db,sql,NULL,NULL,&errmsg);
-	if(res!=SQLITE_OK){
-		printf("\033[31m添加Usr表项失败:%s...\n\033[0m",sqlite3_errmsg(db));
-		//向客户端发送报错信息；
-		strcpy(cmsg.code,"Error");
-		strcpy(cmsg.buf,"添加用户失败\n");
-		Send(&cmsg,cfd);
-		return;
+	if(res!=0){
+		
 	}
-	else{
-		//向客户端发送成功插入到该用户消息
-		strcpy(cmsg.code,"OK");
-		strcpy(cmsg.buf,"添加用户成功\n");
-		Send(&cmsg,cfd);
-	}
-
 	bzero(sql,sizeof(sql));
 	sprintf(sql,"insert into Staff values(\"%s\",\"%s\",%d,\"%s\",%f,\"%s\",%d,\"%s\",\"%s\")"\
 			,msg->umsg.name,msg->umsg.addr,msg->umsg.age,msg->umsg.phone,msg->umsg.salary,msg->umsg.part,\
@@ -562,26 +521,6 @@ void DelUser(Msg* msg,int cfd){
 		//向客户端发送成功插入到该用户消息
 		strcpy(cmsg.code,"OK");
 		strcpy(cmsg.buf,"删除用户成功\n");
-		Send(&cmsg,cfd);
-		return;	
-	}
-	//删除密码和用户名
-	bzero(sql,sizeof*sql);
-	sprintf(sql,"delete from User where name=\"%s\"",msg->umsg.name);
-	res=sqlite3_exec(db,sql,NULL,NULL,&errmsg);
-	printf("res=%d\n",res);
-	if(res!=SQLITE_OK){
-		printf("\033[31m删除数据库表项失败:%s...\n\033[0m",sqlite3_errmsg(db));
-		//向客户端发送报错信息；
-		strcpy(cmsg.code,"Error");
-		strcpy(cmsg.buf,"删除用户名和密码失败\n");
-		Send(&cmsg,cfd);
-		return;
-	}
-	else{
-		//向客户端发送成功插入到该用户消息
-		strcpy(cmsg.code,"OK");
-		strcpy(cmsg.buf,"删除用户和密码成功成功\n");
 		Send(&cmsg,cfd);
 		return;	
 	}
@@ -708,8 +647,6 @@ void UserSignIn(Msg* msg,int cfd){
 			if(strcmp(result[index],msg->user)==0){
 				if(strcmp(result[index+1],msg->passwd)==0){
 					//匹配成功，发送消息给客户端
-					bzero(user,sizeof(user));
-					strcpy(user,msg->umsg.name);
 					printf("\033[31m登陆成功...\n\033[0m");
 					strcpy(cmsg.code,"OK");
 					strcpy(cmsg.buf,"用户登陆成功\n");

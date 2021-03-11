@@ -59,6 +59,7 @@ typedef struct clinfo{
 }cinfo;
 extern sqlite3* db;
 extern int sfd;
+extern char user[20];
 
 //启动服务器
 int ServerInit();
